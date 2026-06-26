@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dress-ED: Instruction-Guided Editing for Virtual Try-On and Try-Off</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f5f9fe;
+    --text: #0d1f33;
+    --text-light: #3a5570;
+    --accent: #1a5fa8;
+    --accent-light: #e4f0fb;
+    --teal: #1a7a8a;
+    --gold: #2a6aaa;
+    --border: #d0e2f4;
+    --section-bg: #eaf3fb;
+    --tag-bg: #daeaf8;
+    --serif: 'EB Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --max: 860px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(245,249,254,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 5vw;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px;
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .nav-links {
+    display: flex; gap: 24px; list-style: none;
+  }
+  .nav-links a {
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--text-light);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 72px 24px 56px;
+    text-align: center;
+  }
+
+  .venue-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(26,95,168,0.35);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 28px;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  /* Authors */
+  .authors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 4px;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+  }
+  .authors a, .authors span {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 400;
+  }
+  .authors sup {
+    font-size: 0.6em;
+    color: var(--accent);
+    margin-left: 1px;
+  }
+  .authors .sep { color: var(--border); }
+
+  .affiliations {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    margin-bottom: 36px;
+    letter-spacing: 0.01em;
+    line-height: 1.8;
+  }
+  .affiliations sup {
+    font-size: 0.7em;
+    color: var(--accent);
+    margin-right: 2px;
+  }
+
+  /* CTA buttons */
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 56px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 9px 20px;
+    border-radius: 3px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:hover { background: #154d8a; }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--section-bg); }
+  .btn-muted {
+    background: transparent;
+    color: var(--text-light);
+    border: 1px solid var(--border);
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* ── HERO STATS ── */
+  .stat-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-item {
+    padding: 20px 36px;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-n {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-l {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-light);
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 72px 24px;
+  }
+  .section-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+  .section-alt { background: var(--section-bg); }
+  .section-dark {
+    background: #0a1a2e;
+    color: rgba(220,235,250,0.9);
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-dark .section-label { color: #6ab0e8; }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 400;
+    line-height: 1.25;
+    margin-bottom: 20px;
+  }
+  .section-dark .section-title { color: rgba(220,235,250,0.95); }
+
+  .section-body {
+    font-size: 0.92rem;
+    color: var(--text-light);
+    line-height: 1.85;
+    font-weight: 300;
+    max-width: 680px;
+  }
+  .section-dark .section-body { color: rgba(220,235,250,0.55); }
+
+  /* ── TLDR / ABSTRACT ── */
+  .abstract-box {
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    background: var(--accent-light);
+    border-radius: 0 4px 4px 0;
+    margin-top: 32px;
+  }
+  .abstract-box .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .abstract-box p {
+    font-size: 0.93rem;
+    color: var(--text);
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ── FIGURE placeholder ── */
+  .fig-placeholder {
+    width: 100%;
+    aspect-ratio: 16/7;
+    background: var(--section-bg);
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 32px 0;
+  }
+  .fig-placeholder svg { opacity: 0.3; }
+  .fig-placeholder span {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    opacity: 0.6;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+  .fig-caption {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-style: italic;
+    text-align: center;
+    margin-top: 12px;
+    margin-bottom: 32px;
+  }
+
+  /* ── 4 KEY CONTRIBUTION CARDS ── */
+  .contrib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .contrib-card {
+    background: var(--bg);
+    padding: 28px 24px;
+    position: relative;
+  }
+  .contrib-card::before {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 3px;
+    margin-bottom: 16px;
+  }
+  .contrib-card:nth-child(1)::before { background: var(--accent); }
+  .contrib-card:nth-child(2)::before { background: var(--teal); }
+  .contrib-card:nth-child(3)::before { background: var(--gold); }
+  .contrib-card:nth-child(4)::before { background: #7a5aaa; }
+  .contrib-card .tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .contrib-card:nth-child(1) .tag { color: var(--accent); }
+  .contrib-card:nth-child(2) .tag { color: var(--teal); }
+  .contrib-card:nth-child(3) .tag { color: var(--gold); }
+  .contrib-card:nth-child(4) .tag { color: #7a5aaa; }
+  .contrib-card h3 {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .contrib-card p {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── PIPELINE ── */
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1px;
+    background: rgba(180,210,240,0.08);
+    margin-top: 40px;
+  }
+  .pipeline-step {
+    background: #0e2240;
+    padding: 32px 28px 0 28px;
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+  }
+  .pipeline-step-text {
+    padding-bottom: 24px;
+    align-self: start;
+  }
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin-bottom: 18px;
+  }
+  .s1 { background: rgba(30,110,200,0.18); color: #4a90e8; border: 1px solid rgba(30,110,200,0.4); }
+  .s2 { background: rgba(210,170,0,0.18); color: #c9a800; border: 1px solid rgba(210,170,0,0.45); }
+  .s3 { background: rgba(210,50,50,0.18); color: #d94040; border: 1px solid rgba(210,50,50,0.4); }
+  .s4 { background: rgba(30,150,80,0.18); color: #2eaa60; border: 1px solid rgba(30,150,80,0.4); }
+  .pipeline-step h4 {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: rgba(220,235,250,0.9);
+    margin-bottom: 8px;
+  }
+  .pipeline-step p {
+    font-size: 0.82rem;
+    color: rgba(180,210,240,0.55);
+    line-height: 1.75;
+    font-weight: 300;
+  }
+  .model-chip {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+  .m1 { background: rgba(30,110,200,0.15); color: #4a90e8; }
+  .m2 { background: rgba(210,170,0,0.15); color: #b89600; }
+  .m3 { background: rgba(210,50,50,0.15); color: #d94040; }
+  .m4 { background: rgba(30,150,80,0.15); color: #2eaa60; }
+
+  .pipeline-fig-placeholder {
+    background: rgba(11,28,52,0.6);
+    border-top: 1px solid rgba(180,210,240,0.08);
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(180,210,240,0.35);
+    align-self: end;
+  }
+  .pipeline-fig-placeholder svg { opacity: 0.5; }
+  .pipeline-fig-placeholder span {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    opacity: 0.6;
+  }
+
+  .accuracy-callout {
+    margin-top: 36px;
+    padding: 24px 28px;
+    background: rgba(30,110,200,0.1);
+    border-left: 3px solid #4a90e8;
+    border-radius: 0 4px 4px 0;
+  }
+  .accuracy-callout h4 {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    color: #6ab0e8;
+    margin-bottom: 6px;
+  }
+  .accuracy-callout p {
+    font-size: 0.82rem;
+    color: rgba(180,210,240,0.55);
+    line-height: 1.75;
+    font-weight: 300;
+  }
+  .big-pct {
+    font-family: var(--serif);
+    font-size: 1.9rem;
+    font-weight: 400;
+    color: #4a90e8;
+    display: inline-block;
+    margin-top: 10px;
+  }
+
+  /* ── EDIT TYPE CARDS ── */
+  .edit-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 36px;
+  }
+  .et-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px 16px;
+  }
+  .section-alt .et-card { background: var(--bg); }
+  .et-color-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .et-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .et-name { font-size: 0.8rem; font-weight: 500; color: var(--text); }
+  .et-count {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .et-pct { font-size: 0.7rem; color: var(--text-light); font-weight: 300; }
+  .et-bar-bg {
+    margin-top: 10px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .et-bar {
+    height: 100%;
+    border-radius: 1px;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* ── CHARTS ── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 40px;
+  }
+  @media (max-width: 640px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .pipeline-grid { grid-template-columns: 1fr; }
+    .method-grid { grid-template-columns: 1fr; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+  .chart-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+  .chart-card h4 {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+  .chart-sub {
+    font-size: 0.74rem;
+    color: var(--text-light);
+    margin-bottom: 18px;
+    font-weight: 300;
+  }
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-wrap-tall { position: relative; height: 300px; }
+
+  /* ── FUNNEL STATS ── */
+  .funnel-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .funnel-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+  }
+  .section-alt .funnel-card { background: var(--bg); }
+  .funnel-n {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .funnel-l {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  /* ── COMPARISON TABLE ── */
+  .table-wrap { overflow-x: auto; margin-top: 36px; }
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+  .comp-table th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(180,210,240,0.45);
+    border-bottom: 1px solid rgba(180,210,240,0.1);
+  }
+  .comp-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(180,210,240,0.07);
+    color: rgba(200,225,245,0.65);
+    font-weight: 300;
+  }
+  .comp-table tr.group-row td {
+    background: rgba(180,210,240,0.05);
+    color: rgba(180,210,240,0.32);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-bottom: none;
+  }
+  .comp-table tr.ours td {
+    background: rgba(26,95,168,0.14);
+    color: rgba(220,235,250,0.92);
+    font-weight: 500;
+  }
+  .comp-table tr.ours td:first-child {
+    border-left: 3px solid var(--accent);
+  }
+  .comp-table .check { color: #5bcfe0; }
+  .comp-table .cross { color: rgba(180,210,240,0.22); }
+  .comp-table tr:last-child td { border-bottom: none; }
+
+  /* ── METHOD ── */
+  .method-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+    align-items: stretch;
+  }
+  .method-fig-placeholder {
+    background: var(--section-bg);
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    width: 100%;
+    aspect-ratio: 16/7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .method-fig-placeholder svg { opacity: 0.3; }
+  .method-fig-placeholder span {
+    font-size: 0.74rem;
+    color: var(--text-light);
+    opacity: 0.6;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .features { display: flex; flex-direction: column; gap: 16px; height: 100%; }
+  .feature-item {
+    padding: 18px 20px;
+    background: var(--section-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 3px 3px 0;
+    flex: 1;
+  }
+  .feature-item:nth-child(2) { border-left-color: var(--teal); }
+  .feature-item:nth-child(3) { border-left-color: var(--gold); }
+  .feature-item:nth-child(4) { border-left-color: #7a5aaa; }
+  .feature-item h4 {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  .feature-item p {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── RESULTS ── */
+  .results-bar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 36px;
+  }
+  @media (max-width: 640px) {
+    .results-bar-grid { grid-template-columns: 1fr; }
+    .funnel-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── CITATION ── */
+  .citation-box {
+    background: #eaf3fb;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    margin-top: 32px;
+    position: relative;
+  }
+  .citation-box pre {
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    color: var(--text-light);
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: background 0.15s;
+  }
+  .copy-btn:hover { background: var(--border); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #07111f;
+    color: rgba(180,210,240,0.42);
+    padding: 40px 5vw;
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.9;
+    font-weight: 300;
+  }
+  footer strong { color: rgba(200,225,245,0.7); font-weight: 400; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeUp 0.7s ease both; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+
+  /* ── RESULTS IMAGE VIEWER ── */
+  .selectors-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 28px;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+  .selector-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .dropdown-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .dd-btn {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    padding: 8px 36px 8px 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233a5570' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    min-width: 180px;
+    white-space: nowrap;
+  }
+  .dd-btn:hover, .dd-btn:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26,95,168,0.1);
+  }
+  .results-img-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) { .results-img-row { grid-template-columns: 1fr; } }
+  .results-img-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .results-img-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    text-align: center;
+  }
+  .results-img-placeholder {
+    aspect-ratio: 3/4;
+    background: var(--section-bg);
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--border);
+  }
+  .results-img-placeholder svg { opacity: 0.4; }
+  .results-img-placeholder span {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    opacity: 0.6;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .results-instruction {
+    margin-top: 20px;
+    text-align: center;
+    padding: 0 40px;
+  }
+  .results-instruction em {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-light);
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+
+  /* Legend row */
+  .legend-row {
+    display: flex; flex-wrap: wrap; gap: 10px 18px;
+    margin-top: 12px; font-size: 11px; color: var(--text-light);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-weight: 300; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .results-row-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-light);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Dress-ED</a>
+  <ul class="nav-links">
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#dataset">Dataset</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#results">Dataset</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="venue-badge fade-in">arXiv Preprint · 2026</div>
+
+  <h1 class="fade-in delay-1">
+    Dress-ED: <em>Instruction-Guided Editing</em><br>
+    for Virtual Try-On and Try-Off
+  </h1>
+
+<div class="authors fade-in delay-2">
+    <span><strong>Davide Lobba</strong><sup>2,3,*</sup></span>
+    <span class="sep">&nbsp;·&nbsp;</span>
+    <span><strong>Fulvio Sanguigni</strong><sup>1,3,*</sup></span>
+    <span class="sep">&nbsp;·&nbsp;</span>
+    <span>Bin Ren<sup>2,3</sup></span>
+    <span class="sep">&nbsp;·&nbsp;</span>
+    <span>Marcella Cornia<sup>1</sup></span>
+    <span class="sep">&nbsp;·&nbsp;</span>
+    <span>Nicu Sebe<sup>2</sup></span>
+    <span class="sep">&nbsp;·&nbsp;</span>
+    <span>Rita Cucchiara<sup>1</sup></span>
+  </div>
+
+  <div class="affiliations fade-in delay-2">
+    <sup>1</sup>University of Modena &nbsp;·&nbsp;
+    <sup>2</sup>University of Trento &nbsp;·&nbsp;
+    <sup>3</sup>University of Pisa
+    <br>
+    <sup>*</sup>Equal contribution
+  </div>
+
+  <div class="cta-row fade-in delay-3">
+    <a href="https://arxiv.org/abs/2603.22607" target="_blank" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      arXiv Paper
+    </a>
+    <a href="#" class="btn btn-muted">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub <span style="font-size:9px;opacity:.6;margin-left:2px;">(soon)</span>
+    </a>
+    <a href="#dataset" class="btn btn-outline">Dataset Stats</a>
+    <a href="#results" class="btn btn-outline">Results</a>
+  </div>
+
+  <!-- STATS STRIP -->
+  <div class="stat-strip fade-in delay-4">
+    <div class="stat-item">
+      <div class="stat-n">146k</div>
+      <div class="stat-l">Verified quadruplets</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">49k</div>
+      <div class="stat-l">Distinct garment IDs</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">7</div>
+      <div class="stat-l">Edit types</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">3</div>
+      <div class="stat-l">Garment categories</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">95.6%</div>
+      <div class="stat-l">Filter accuracy</div>
+    </div>
+  </div>
+</div>
+
+<!-- ABSTRACT -->
+<div id="abstract" class="section section-alt">
+  <div class="section-inner">
+
+    <div class="section-label">Overview</div>
+    <h2 class="section-title">A benchmark to unify virtual try-on, virtual try-off<br>and <em style="font-style:italic;color:var(--accent);">instruction-based editing</em></h2>
+
+    <div class="abstract-box">
+      <div class="label">Abstract</div>
+      <p>
+        We present <strong>Dress-ED</strong>, the first large-scale benchmark unifying VTON, VTOFF, and text-guided garment editing within a single, semantically consistent framework — driven by natural language. No prior dataset jointly supports instruction-driven VTON and VTOFF. Dress-ED defines this task from scratch, providing 146,460 verified quadruplets across 7 edit types and 3 garment categories. Quality is ensured by a 4-stage automated pipeline that achieves 95.6% human-model agreement. Alongside the benchmark, we introduce <strong>Dress-EM</strong>, a unified multimodal diffusion baseline applicable to both VTON and VTOFF, which outperforms all baselines across all tasks and metrics.
+      </p>
+    </div>
+
+<!-- Figure 1 — below the abstract -->
+<img src="figs/teaser.png"
+     alt="Dress-ED teaser figure"
+     style="width:100%;border-radius:6px;margin:32px 0 0;mix-blend-mode:multiply;">
+<p class="fig-caption">Figure 1. Dress-ED unifies VTON, VTOFF, and text-guided garment editing within a single semantically consistent framework.</p>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div id="pipeline" class="section section-dark">
+  <div class="section-inner">
+    <div class="section-label">Data generation pipeline</div>
+    <h2 class="section-title">Four automated stages,<br>one scalable <em style="font-style:italic;">pipeline</em></h2>
+    <p class="section-body">
+      Built on top of Dress Code, the pipeline converts static person-garment pairs into richly annotated editing quadruplets — at scale, without any manual labeling.
+    </p>
+
+    <div class="pipeline-grid">
+      <div class="pipeline-step">
+        <div class="pipeline-step-text">
+          <div class="step-num s1">I</div>
+          <h4>Attribute Extraction &amp; Instruction Generation</h4>
+          <p>A multimodal LLM jointly processes the in-shop garment and the on-model person image to produce a structured JSON of garment attributes. Rule-based templates synthesise paired editing instructions covering all 7 edit types.</p>
+          <span class="model-chip m1">Qwen3-VL</span>
+        </div>
+        <div class="pipeline-fig-placeholder" style="background:none;border-top:1px solid rgba(180,210,240,0.08);padding:0;">
+          <img src="figs/block_1.png" alt="Stage 1 figure" style="width:100%;height:100%;object-fit:contain;display:block;">
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-text">
+          <div class="step-num s2">II</div>
+          <h4>Edited Garment Generation</h4>
+          <p>Given each (garment, instruction) pair, a state-of-the-art diffusion editor synthesises the edited in-shop garment. This stage produces ~300k raw candidates across all categories before quality filtering.</p>
+          <span class="model-chip m2">FLUX.2 Klein</span>
+        </div>
+        <div class="pipeline-fig-placeholder" style="background:none;border-top:1px solid rgba(180,210,240,0.08);padding:0;">
+          <img src="figs/block_2.png" alt="Stage 2 figure" style="width:100%;height:100%;object-fit:contain;display:block;">
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-text">
+          <div class="step-num s3">III</div>
+          <h4>Edited Try-On Generation</h4>
+          <p>The edited garment is virtually tried on the original person image using a high-fidelity VTON model. A specialised segmentation model ensures hands and body parts are correctly preserved during the try-on.</p>
+          <span class="model-chip m3">FitDiT</span>
+        </div>
+        <div class="pipeline-fig-placeholder" style="background:none;border-top:1px solid rgba(180,210,240,0.08);padding:0;">
+          <img src="figs/block_3.png" alt="Stage 3 figure" style="width:100%;height:100%;object-fit:contain;display:block;">
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-step-text">
+          <div class="step-num s4">IV</div>
+          <h4>LLM-Guided Quality Verification</h4>
+          <p>Each sample is scored by GPT-5 for instruction adherence, content preservation, and realism. A fine-tuned InternVL-3.5 distils these judgments and filters samples below a score of 80 — retaining ~146k verified quadruplets.</p>
+          <span class="model-chip m4">GPT-5 + InternVL-3.5</span>
+        </div>
+        <div class="pipeline-fig-placeholder" style="background:none;border-top:1px solid rgba(180,210,240,0.08);padding:0;">
+          <img src="figs/block_4.png" alt="Stage 4 figure" style="width:100%;height:100%;object-fit:contain;display:block;">
+        </div>
+      </div>
+    </div>
+
+    <div class="accuracy-callout">
+      <h4>Verification accuracy: 95.6%</h4>
+      <p>
+        In a blind user study (221 samples), human annotators and the fine-tuned InternVL verifier agreed on 95.6% of cases. 77.7% were jointly rated "good" and 17.9% jointly rated "bad" — confirming the filter correctly identifies low-quality generations without discarding valid data.
+      </p>
+      <div class="big-pct">95.6% human-model agreement</div>
+    </div>
+  </div>
+</div>
+
+<!-- DATASET STATS -->
+<div id="dataset" class="section section-alt">
+  <div class="section-inner">
+    <div class="section-label">Dataset statistics</div>
+    <h2 class="section-title">146,460 samples across <em style="font-style:italic;color:var(--accent);">three garment categories</em></h2>
+
+    <!-- Edit type cards -->
+    <div class="edit-types" id="editTypesGrid">
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#c8522a"></div><span class="et-name">Add Detail</span></div>
+        <div class="et-count" data-target="39776">0</div>
+        <div class="et-pct">27% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="27" style="width:0%;background:#c8522a;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#e8834d"></div><span class="et-name">Change Pattern</span></div>
+        <div class="et-count" data-target="39559">0</div>
+        <div class="et-pct">27% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="27" style="width:0%;background:#e8834d;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#2d6e6e"></div><span class="et-name">Change Color</span></div>
+        <div class="et-count" data-target="29983">0</div>
+        <div class="et-pct">20% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="20" style="width:0%;background:#2d6e6e;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#b8930a"></div><span class="et-name">Modify Structure</span></div>
+        <div class="et-count" data-target="15670">0</div>
+        <div class="et-pct">11% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="11" style="width:0%;background:#b8930a;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#7a5aaa"></div><span class="et-name">Change Material</span></div>
+        <div class="et-count" data-target="14091">0</div>
+        <div class="et-pct">10% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="10" style="width:0%;background:#7a5aaa;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#5e8a3a"></div><span class="et-name">Remove Element</span></div>
+        <div class="et-count" data-target="5305">0</div>
+        <div class="et-pct">4% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="4" style="width:0%;background:#5e8a3a;"></div></div>
+      </div>
+      <div class="et-card">
+        <div class="et-color-row"><div class="et-dot" style="background:#3a7a8a"></div><span class="et-name">Fine-Grained</span></div>
+        <div class="et-count" data-target="2076">0</div>
+        <div class="et-pct">1% of dataset</div>
+        <div class="et-bar-bg"><div class="et-bar" data-width="1" style="width:0%;background:#3a7a8a;"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="section section-alt">
+  <div class="section-inner">
+    <div class="section-label">Dataset showcase</div>
+    <h2 class="section-title">Browse <em style="font-style:italic;color:var(--accent);">Dress-ED</em> samples</h2>
+
+    <div class="selectors-row">
+      <div class="selector-group">
+        <span class="results-row-label">Edit type</span>
+        <div class="dropdown-wrap">
+          <select class="dd-btn" id="editTypeSelect" onchange="onEditTypeChange(this)">
+            <option value="add-detail">Add Detail</option>
+            <option value="change-color">Change Color</option>
+            <option value="change-material">Change Material</option>
+            <option value="change-pattern">Change Pattern</option>
+            <option value="color-detail">Color Detail</option>
+            <option value="modify-structure">Modify Structure</option>
+            <option value="remove-element">Remove Element</option>
+            <option value="replace-detail">Replace Detail</option>
+                    </select>
+        </div>
+      </div>
+      <div class="selector-group">
+        <span class="results-row-label">Garment category</span>
+        <div class="dropdown-wrap">
+          <select class="dd-btn" id="categorySelect" onchange="onCategoryChange(this)"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-img-row" style="grid-template-columns:repeat(4,1fr);">
+      <div class="results-img-card">
+        <div class="results-img-label">Original Garment</div>
+        <img id="imgGarment" src="" alt="Original garment" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+      </div>
+      <div class="results-img-card">
+        <div class="results-img-label">Original Person</div>
+        <img id="imgPerson" src="" alt="Original person" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+      </div>
+      <div class="results-img-card">
+        <div class="results-img-label">Edited Garment</div>
+        <img id="imgEditedGarment" src="" alt="Edited garment" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+      </div>
+      <div class="results-img-card">
+        <div class="results-img-label">Edited Person</div>
+        <img id="imgResult" src="" alt="Edited person" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+      </div>
+    </div>
+
+    <div class="results-instruction" id="resultsInstruction">
+      <em id="instructionText"></em>
+    </div>
+  </div>
+</div>
+
+<!-- METHOD -->
+<div id="method" class="section">
+  <div class="section-inner">
+    <div class="section-label">Proposed method</div>
+    <h2 class="section-title">Dress-EM: a unified <em style="font-style:italic;color:var(--accent);">multimodal diffusion</em> baseline</h2>
+
+<img src="figs/method.png"
+     alt="Dress-EM architecture diagram"
+     style="width:100%;border-radius:6px;margin-top:32px;mix-blend-mode:multiply;">
+<p class="fig-caption">Dress-EM is an architecture built for edited virtual try-on and edited virtual try-off, trained on our annotated benchmark. It encompasses a MLLM to extract the multimodal editing prompt, and a trainable lightweight connector to project the multimodal embeddings into the DiT input space.</p>
+  </div>
+</div>
+
+
+<!-- CHART -->
+<div class="section section-alt">
+  <div class="section-inner">
+    <div class="section-label">Quantitative comparison</div>
+    <h2 class="section-title">Dress-EM outperforms all baselines<br>across <em style="font-style:italic;color:var(--accent);">every edit type</em></h2>
+    <div style="margin-top:32px;">
+      <div class="chart-card">
+        <h4>Per-edit-type DINO-I — Dress-EM vs best baseline (Edited VTON)</h4>
+        <div class="chart-sub">Semantic consistency across all 7 edit tasks · higher is better</div>
+        <div style="position:relative;height:360px;max-width:500px;margin:0 auto;">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <p class="fig-caption" style="margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto;">Dress-EM consistently leads across all 7 edit categories — from coarse color and material changes to fine-grained structural modifications — demonstrating that a single unified model can flexibly handle the full diversity of the Dress-ED benchmark without task-specific tuning.</p>
+  </div>
+</div>
+
+<!-- CITATION -->
+<div id="citation" class="section">
+  <div class="section-inner">
+    <div class="section-label">Citation</div>
+    <h2 class="section-title">BibTeX</h2>
+    <div class="citation-box">
+      <button class="copy-btn" onclick="copyBib()">Copy</button>
+      <pre id="bibtext">@article{dressED2026,
+  title={Dress-ED: Instruction-Guided Editing for Virtual Try-On and Try-Off},
+  author={Sanguigni, Fulvio and Lobba, Davide and Ren, Bin and Cornia, Marcella and Sebe, Nicu and Cucchiara, Rita},
+  journal={arXiv preprint arXiv:2603.22607},
+  year={2026}
+}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <strong>Dress-ED: Instruction-Guided Editing for Virtual Try-On and Try-Off</strong><br>
+  Fulvio Sanguigni, Davide Lobba, Bin Ren, Marcella Cornia, Nicu Sebe, Rita Cucchiara<br>
+  University of Modena · University of Trento · University of Pisa<br><br>
+  Dataset and code will be made publicly available. &nbsp;·&nbsp; arXiv preprint 2026
+</footer>
+
+<script>
+/* ── Charts ── */
+const accent = '#1a5fa8', teal = '#1a7a8a', gold = '#2a6aaa';
+
+new Chart(document.getElementById('radarChart').getContext('2d'), {
+  type: 'radar',
+  data: {
+    labels: ['Change Color','Change Pattern','Change Material','Fine-Grained','Add Detail','Remove Element','Modify Structure'],
+    datasets: [
+      { label: 'Dress-EM (Ours)', data: [0.949,0.920,0.942,0.938,0.944,0.947,0.946], backgroundColor: 'rgba(26,95,168,0.15)', borderColor: accent, borderWidth: 2, pointBackgroundColor: accent, pointRadius: 4 },
+      { label: 'FLUX.2 Klein',    data: [0.939,0.908,0.939,0.936,0.941,0.935,0.943], backgroundColor: 'rgba(138,176,204,0.1)', borderColor: '#8ab0cc', borderWidth: 1.5, pointBackgroundColor: '#8ab0cc', pointRadius: 3, borderDash: [4,3] },
+      { label: 'CatVTON',         data: [0.929,0.889,0.922,0.912,0.919,0.931,0.921], backgroundColor: 'rgba(26,122,138,0.08)', borderColor: teal, borderWidth: 1.5, pointBackgroundColor: teal, pointRadius: 3, borderDash: [2,3] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'bottom', labels: { color: '#1a3a5a', font: { size: 11 }, boxWidth: 12, padding: 16 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toFixed(3)}` } }
+    },
+    scales: {
+      r: { min: 0.87, max: 0.96, ticks: { stepSize: 0.03, color: '#3a6080', font: { size: 10 }, backdropColor: 'transparent' }, grid: { color: 'rgba(26,58,90,0.12)' }, pointLabels: { color: '#1a3a5a', font: { size: 10.5 } }, angleLines: { color: 'rgba(26,58,90,0.12)' } }
+    }
+  }
+});
+
+/* ── Animated counters ── */
+function animateCounter(el, target, duration) {
+  const start = performance.now();
+  const update = now => {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(ease * target).toLocaleString();
+    if (p < 1) requestAnimationFrame(update);
+    else el.textContent = target.toLocaleString();
+  };
+  requestAnimationFrame(update);
+}
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    observer.unobserve(entry.target);
+    entry.target.querySelectorAll('.et-count[data-target]').forEach((el, i) => {
+      setTimeout(() => animateCounter(el, parseInt(el.dataset.target), 1200), i * 80);
+    });
+    entry.target.querySelectorAll('.et-bar[data-width]').forEach((el, i) => {
+      setTimeout(() => { el.style.width = el.dataset.width + '%'; }, i * 80);
+    });
+  });
+}, { threshold: 0.15 });
+
+const grid = document.getElementById('editTypesGrid');
+if (grid) observer.observe(grid);
+
+/* ── Results viewer ── */
+const RESULTS_DATA = {
+    "add-detail": {
+        "dresses": {
+            "garment": "figs/Add_Detail/dresses/021363/garment/original_garment.png",
+            "person": "figs/Add_Detail/dresses/021363/person/original_person.jpg",
+            "edited_garment": "figs/Add_Detail/dresses/021363/garment/Add_detail_Add-a-bow-at-the-neck-of-the-garment.png",
+            "result": "figs/Add_Detail/dresses/021363/person/Add_detail_Add-a-bow-at-the-neck-of-the-garment.png",
+            "instruction": "Add a bow at the neck of the dress."
+        },
+        "lower_body": {
+            "garment": "figs/Add_Detail/lower_body/015293/garment/original_garment.png",
+            "person": "figs/Add_Detail/lower_body/015293/person/original_person.jpg",
+            "edited_garment": "figs/Add_Detail/lower_body/015293/garment/Add_detail_Add-a-belt-to-the-garment.png",
+            "result": "figs/Add_Detail/lower_body/015293/person/Add_detail_Add-a-belt-to-the-garment.png",
+            "instruction": "Add a belt to the trousers"
+        },
+        "upper_body": {
+            "garment": "figs/Add_Detail/upper_body/008842/garment/original_garment.png",
+            "person": "figs/Add_Detail/upper_body/008842/person/original_person.jpg",
+            "edited_garment": "figs/Add_Detail/upper_body/008842/garment/Add_detail_Add-a-bow-at-the-neck-of-the-garment.png",
+            "result": "figs/Add_Detail/upper_body/008842/person/Add_detail_Add-a-bow-at-the-neck-of-the-garment.png",
+            "instruction": "Add a bow at the neck of the turtleneck."
+        }
+    },
+    "change-color": {
+        "dresses": {
+            "garment": "figs/Change_Color/dresses/032500/garment/original_garment.png",
+            "person": "figs/Change_Color/dresses/032500/person/original_person.jpg",
+            "edited_garment": "figs/Change_Color/dresses/032500/garment/Change_Color_Change-the-color-of-the-garment-to-orange.png",
+            "result": "figs/Change_Color/dresses/032500/person/Change_Color_Change-the-color-of-the-garment-to-orange.png",
+            "instruction": "Change the color of the garment to orange."
+        },
+        "lower_body": {
+            "garment": "figs/Change_Color/lower_body/015342/garment/original_garment.png",
+            "person": "figs/Change_Color/lower_body/015342/person/original_person.jpg",
+            "edited_garment": "figs/Change_Color/lower_body/015342/garment/Change_Color_Change-the-color-of-the-garment-to-navy.png",
+            "result": "figs/Change_Color/lower_body/015342/person/Change_Color_Change-the-color-of-the-garment-to-navy.png",
+            "instruction": "Change the color of the trousers to blue."
+        },
+        "upper_body": {
+            "garment": "figs/Change_Color/upper_body/011829/garment/original_garment.png",
+            "person": "figs/Change_Color/upper_body/011829/person/original_person.jpg",
+            "edited_garment": "figs/Change_Color/upper_body/011829/garment/Change_Color_Change-the-color-of-the-garment-to-maroon.png",
+            "result": "figs/Change_Color/upper_body/011829/person/Change_Color_Change-the-color-of-the-garment-to-maroon.png",
+            "instruction": "Change the color of the sweater to maroon."
+        }
+    },
+    "change-material": {
+        "dresses": {
+            "garment": "figs/Change_Material/dresses/042940/garment/original_garment.png",
+            "person": "figs/Change_Material/dresses/042940/person/original_person.jpg",
+            "edited_garment": "figs/Change_Material/dresses/042940/garment/Change_Material_Make-the-garment-black-leather.png",
+            "result": "figs/Change_Material/dresses/042940/person/Change_Material_Make-the-garment-black-leather.png",
+            "instruction": "Make the garment black leather."
+        },
+        "lower_body": {
+            "garment": "figs/Change_Material/lower_body/013581/garment/original_garment.png",
+            "person": "figs/Change_Material/lower_body/013581/person/original_person.jpg",
+            "edited_garment": "figs/Change_Material/lower_body/013581/garment/Change_Material_Make-the-garment-blue-silk.png",
+            "result": "figs/Change_Material/lower_body/013581/person/Change_Material_Make-the-garment-blue-silk.png",
+            "instruction": "Make the trousers blue silk."
+        }
+    },
+    "change-pattern": {
+        "dresses": {
+            "garment": "figs/Change_Pattern/dresses/029571/garment/original_garment.png",
+            "person": "figs/Change_Pattern/dresses/029571/person/original_person.jpg",
+            "edited_garment": "figs/Change_Pattern/dresses/029571/garment/Change_Pattern_Add-a-camouflage-pattern-to-the-garment.png",
+            "result": "figs/Change_Pattern/dresses/029571/person/Change_Pattern_Add-a-camouflage-pattern-to-the-garment.png",
+            "instruction": "Add a leopard print pattern to the dress."
+        },
+        "lower_body": {
+            "garment": "figs/Change_Pattern/lower_body/017025/garment/original_garment.png",
+            "person": "figs/Change_Pattern/lower_body/017025/person/original_person.jpg",
+            "edited_garment": "figs/Change_Pattern/lower_body/017025/garment/Change_Pattern_Add-a-geometric-pattern-to-the-garment.png",
+            "result": "figs/Change_Pattern/lower_body/017025/person/Change_Pattern_Add-a-geometric-pattern-to-the-garment.png",
+            "instruction": "Add a geometric pattern to the skirt."
+        },
+        "upper_body": {
+            "garment": "figs/Change_Pattern/upper_body/008821/garment/original_garment.png",
+            "person": "figs/Change_Pattern/upper_body/008821/person/original_person.jpg",
+            "edited_garment": "figs/Change_Pattern/upper_body/008821/garment/Change_Pattern_Replace-the-rose-motif-pattern-with-a-polka-dot-pattern.png",
+            "result": "figs/Change_Pattern/upper_body/008821/person/Change_Pattern_Replace-the-rose-motif-pattern-with-a-polka-dot-pattern.png",
+            "instruction": "On the sweater, replace the rose motif pattern with a polka dot pattern."
+        }
+    },
+    "color-detail": {
+        "dresses": {
+            "garment": "figs/Color_Detail/dresses/031122/garment/original_garment.png",
+            "person": "figs/Color_Detail/dresses/031122/person/original_person.jpg",
+            "edited_garment": "figs/Color_Detail/dresses/031122/garment/Color_detail_Change-the-color-of-the-bow-to-orange.png",
+            "result": "figs/Color_Detail/dresses/031122/person/Color_detail_Change-the-color-of-the-bow-to-orange.png",
+            "instruction": "On the dress, change the color of the feather trim to lavender."
+        },
+        "lower_body": {
+            "garment": "figs/Color_Detail/lower_body/020444/garment/original_garment.png",
+            "person": "figs/Color_Detail/lower_body/020444/person/original_person.jpg",
+            "edited_garment": "figs/Color_Detail/lower_body/020444/garment/Color_detail_Change-the-color-of-the-fringe-to-yellow.png",
+            "result": "figs/Color_Detail/lower_body/020444/person/Color_detail_Change-the-color-of-the-fringe-to-yellow.png",
+            "instruction": "On the shorts, change the color of the fringe to yellow."
+        },
+        "upper_body": {
+            "garment": "figs/Color_Detail/upper_body/004887/garment/original_garment.png",
+            "person": "figs/Color_Detail/upper_body/004887/person/original_person.jpg",
+            "edited_garment": "figs/Color_Detail/upper_body/004887/garment/Color_detail_Change-the-color-of-the-text-to-orange.png",
+            "result": "figs/Color_Detail/upper_body/004887/person/Color_detail_Change-the-color-of-the-text-to-orange.png",
+            "instruction": "On the t-shirt, change the color of the text to orange."
+        }
+    },
+    "modify-structure": {
+        "dresses": {
+            "garment": "figs/Modify_Structure/dresses/039561/garment/original_garment.png",
+            "person": "figs/Modify_Structure/dresses/039561/person/original_person.jpg",
+            "edited_garment": "figs/Modify_Structure/dresses/039561/garment/Modify_Structure_Change-the-neckline-to-v-neck.png",
+            "result": "figs/Modify_Structure/dresses/039561/person/Modify_Structure_Change-the-neckline-to-v-neck.png",
+            "instruction": "On the sweater, change the neckline to 'v-neck'."
+        },
+        "upper_body": {
+            "garment": "figs/Modify_Structure/upper_body/004250/garment/original_garment.png",
+            "person": "figs/Modify_Structure/upper_body/004250/person/original_person.jpg",
+            "edited_garment": "figs/Modify_Structure/upper_body/004250/garment/Modify_Structure_Change-the-neckline-to-collar.png",
+            "result": "figs/Modify_Structure/upper_body/004250/person/Modify_Structure_Change-the-neckline-to-collar.png",
+            "instruction": "On the t-shirt, change the neckline to 'v-neck'."
+        }
+    },
+    "remove-element": {
+        "dresses": {
+            "garment": "figs/Remove_Element/dresses/038948/garment/original_garment.png",
+            "person": "figs/Remove_Element/dresses/038948/person/original_person.jpg",
+            "edited_garment": "figs/Remove_Element/dresses/038948/garment/Remove_Element_Remove-the-embroidery-from-the-garment.png",
+            "result": "figs/Remove_Element/dresses/038948/person/Remove_Element_Remove-the-embroidery-from-the-garment.png",
+            "instruction": "Remove the embroidery from the dress."
+        },
+        "lower_body": {
+            "garment": "figs/Remove_Element/lower_body/016097/garment/original_garment.png",
+            "person": "figs/Remove_Element/lower_body/016097/person/original_person.jpg",
+            "edited_garment": "figs/Remove_Element/lower_body/016097/garment/Remove_Element_Remove-the-bow-from-the-garment.png",
+            "result": "figs/Remove_Element/lower_body/016097/person/Remove_Element_Remove-the-bow-from-the-garment.png",
+            "instruction": "Remove the embroidery from the trousers."
+        },
+        "upper_body": {
+            "garment": "figs/Remove_Element/upper_body/005340/garment/original_garment.png",
+            "person": "figs/Remove_Element/upper_body/005340/person/original_person.jpg",
+            "edited_garment": "figs/Remove_Element/upper_body/005340/garment/Remove_Element_Remove-the-logo-from-the-garment.png",
+            "result": "figs/Remove_Element/upper_body/005340/person/Remove_Element_Remove-the-logo-from-the-garment.png",
+            "instruction": "Remove the logo from the t-shirt."
+        }
+    },
+    "replace-detail": {
+        "dresses": {
+            "garment": "figs/Replace_Detail/dresses/046437/garment/original_garment.png",
+            "person": "figs/Replace_Detail/dresses/046437/person/original_person.jpg",
+            "edited_garment": "figs/Replace_Detail/dresses/046437/garment/Replace_detail_Replace-the-belt-with-a-drawstring.png",
+            "result": "figs/Replace_Detail/dresses/046437/person/Replace_detail_Replace-the-belt-with-a-drawstring.png",
+            "instruction": "On the dress, replace the belt with a drawstring."
+        },
+        "lower_body": {
+            "garment": "figs/Replace_Detail/lower_body/017093/garment/original_garment.png",
+            "person": "figs/Replace_Detail/lower_body/017093/person/original_person.jpg",
+            "edited_garment": "figs/Replace_Detail/lower_body/017093/garment/Replace_detail_Replace-the-belt-with-a-bow.png",
+            "result": "figs/Replace_Detail/lower_body/017093/person/Replace_detail_Replace-the-belt-with-a-bow.png",
+            "instruction": "On the skirt, replace the belt with a drawstring."
+        },
+        "upper_body": {
+            "garment": "figs/Replace_Detail/upper_body/006936/garment/original_garment.png",
+            "person": "figs/Replace_Detail/upper_body/006936/person/original_person.jpg",
+            "edited_garment": "figs/Replace_Detail/upper_body/006936/garment/Replace_detail_Replace-the-bow-at-the-neck-with-a-zipper.png",
+            "result": "figs/Replace_Detail/upper_body/006936/person/Replace_detail_Replace-the-bow-at-the-neck-with-a-zipper.png",
+            "instruction": "On the blouse, replace the bow at the neck with a zipper."
+        }
+    }
+};
+
+let currentET  = "add-detail";
+let currentCat = "dresses";
+
+function catLabel(c) {
+  return c.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function renderCategorySelect() {
+  const cats = Object.keys(RESULTS_DATA[currentET] || {});
+  const sel = document.getElementById('categorySelect');
+  sel.innerHTML = '';
+  if (!cats.includes(currentCat)) currentCat = cats[0];
+  cats.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = catLabel(cat);
+    opt.selected = (cat === currentCat);
+    sel.appendChild(opt);
+  });
+}
+
+function updateImages() {
+  const entry = (RESULTS_DATA[currentET] || {})[currentCat];
+  if (!entry) return;
+  document.getElementById('imgGarment').src       = entry.garment;
+  document.getElementById('imgPerson').src        = entry.person;
+  document.getElementById('imgEditedGarment').src = entry.edited_garment || entry.result;
+  document.getElementById('imgResult').src        = entry.result;
+  document.getElementById('instructionText').textContent = '“' + entry.instruction + '”';
+}
+
+function onEditTypeChange(sel) {
+  currentET = sel.value;
+  renderCategorySelect();
+  updateImages();
+}
+
+function onCategoryChange(sel) {
+  currentCat = sel.value;
+  updateImages();
+}
+
+renderCategorySelect();
+updateImages();
+
+/* ── Copy BibTeX ── */
+function copyBib() {
+  navigator.clipboard.writeText(document.getElementById('bibtext').textContent);
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+</script>
+</body>
+</html>
