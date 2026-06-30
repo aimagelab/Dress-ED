@@ -200,7 +200,7 @@ If you use Dress-ED in your research, please cite:
 ```bibtex
 @article{dressED2026,
   title={Dress-ED: Instruction-Guided Editing for Virtual Try-On and Try-Off},
-  author={Lobba, Davide and Sanguigni, Fulvio and Ren, Bin and Cornia, Marcella and Sebe, Nicu and Cucchiara, Rita},
+  author={Lobba, Davide and Sanguigni, Fulvio and Ren, Bin and Cornia, Marcella and Cucchiara, Rita and Sebe, Nicu},
   journal={arXiv preprint arXiv:2603.22607},
   year={2026}
 }
