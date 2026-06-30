@@ -3,18 +3,19 @@
 <h1><img src="assets/dressED.png" height="40" alt="Dress-ED logo" style="vertical-align: middle;"> Dress-ED: Instruction-Guided Editing for Virtual Try-On and Try-Off</h1>
 
 <p>
-  <strong>Davide Lobba</strong><sup>2,3*</sup>&emsp;
-  <strong>Fulvio Sanguigni</strong><sup>1,3*</sup>&emsp;
-  <strong>Bin Ren</strong><sup>2</sup>&emsp;
-  <strong>Marcella Cornia</strong><sup>1</sup>&emsp;
-  <strong>Nicu Sebe</strong><sup>2</sup>&emsp;
-  <strong>Rita Cucchiara</strong><sup>1</sup>
+  <strong>Davide Lobba</strong><sup>1,3*</sup>&emsp;
+  <strong>Fulvio Sanguigni</strong><sup>2,3*</sup>&emsp;
+  <strong>Bin Ren</strong><sup>4</sup>&emsp;
+  <strong>Marcella Cornia</strong><sup>2</sup>&emsp;
+  <strong>Rita Cucchiara</strong><sup>2</sup>&emsp;
+  <strong>Nicu Sebe</strong><sup>1</sup>
 </p>
 
 <p>
-  <sup>1</sup>University of Modena and Reggio Emilia &emsp;
-  <sup>2</sup>University of Trento &emsp;
-  <sup>3</sup>University of Pisa
+  <sup>1</sup>University of Trento &emsp;
+  <sup>2</sup>University of Modena and Reggio Emilia &emsp;
+  <sup>3</sup>University of Pisa &emsp;
+  <sup>4</sup>MBZUAI
 </p>
 
 <p><sup>*</sup> Equal contribution</p>
